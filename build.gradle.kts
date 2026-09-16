@@ -185,10 +185,12 @@ subprojects {
 
             splits {
                 abi {
-                    isEnable = true
+                    // 只产出单一 arm64-v8a APK。ABI 由上面的 ndk / externalNativeBuild
+                    // abiFilters 决定；同时开启 ABI splits 会让 AGP 报
+                    // "Conflicting configuration ... in ndk abiFilters cannot be
+                    // present when splits abi filters are set"。
+                    isEnable = false
                     isUniversalApk = false
-                    reset()
-                    include("arm64-v8a")
                 }
             }
         }
