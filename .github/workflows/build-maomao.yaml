@@ -1,0 +1,89 @@
+name: Build Maomao
+
+# 只在分支 push 与手动触发时构建，避免和上游的 build-debug / build-pre-release 抢跑
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: maomao-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build arm64 APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          go-download-base-url: 'https://github.com/MetaCubeX/go/releases/download/build'
+
+      - name: Apply Go patches
+        run: |
+          cd $(go env GOROOT)
+          for p in $GITHUB_WORKSPACE/.github/patch/*.patch; do
+            patch --verbose -p 1 < "$p"
+          done
+
+      - name: Cache Go build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Update CA bundle
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
+          sudo update-ca-certificates
+          cp -f /etc/ssl/certs/ca-certificates.crt \
+                core/src/foss/golang/clash/component/ca/ca-certificates.crt
+
+      - name: Show effective config
+        run: |
+          echo "--- applicationId / namespace ---"
+          grep -n 'applicationId =\|namespace = if\|abiFilters\|removeSuffix = ' build.gradle.kts
+          echo "--- signing ---"
+          test -f release.keystore && echo "release.keystore present" || echo "release.keystore MISSING"
+          test -f signing.properties && echo "signing.properties present" || echo "signing.properties MISSING"
+
+      - name: Build meta release
+        run: ./gradlew --no-daemon --stacktrace app:assembleMetaRelease
+
+      - name: Inspect APK
+        run: |
+          ls -lh app/build/outputs/apk/meta/release/ || true
+          keytool -printcert -jarfile \
+            "$(ls app/build/outputs/apk/meta/release/*.apk | head -1)" 2>/dev/null \
+            | grep -E "Owner|SHA256" || true
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: maomao-arm64-apk
+          path: app/build/outputs/apk/meta/release/*.apk
+          if-no-files-found: error

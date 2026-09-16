@@ -47,12 +47,12 @@ subprojects {
         defaultConfig {
             if (isApp) {
                 val customApplicationId = queryConfigProperty("custom.application.id") as? String?
-                applicationId = customApplicationId.takeIf { it?.isNotBlank() == true } ?: "com.github.metacubex.clash"
+                applicationId = customApplicationId.takeIf { it?.isNotBlank() == true } ?: "com.cmfa"
             }
 
             project.name.let { name ->
-                namespace = if (name == "app") "com.github.kr328.clash"
-                else "com.github.kr328.clash.$name"
+                namespace = if (name == "app") "com.cmfa"
+                else "com.cmfa.$name"
             }
 
             minSdk = 21
@@ -65,12 +65,12 @@ subprojects {
             resValue("integer", "release_code", "$versionCode")
 
             ndk {
-                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+                abiFilters += listOf("arm64-v8a")
             }
 
             externalNativeBuild {
                 cmake {
-                    abiFilters("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+                    abiFilters("arm64-v8a")
                 }
             }
 
@@ -96,7 +96,7 @@ subprojects {
         productFlavors {
             flavorDimensions("feature")
 
-            val removeSuffix = (queryConfigProperty("remove.suffix") as? String)?.toBoolean() == true
+            val removeSuffix = (queryConfigProperty("remove.suffix") as? String)?.toBoolean() ?: true
 
             create("alpha") {
                 isDefault = true
@@ -186,9 +186,9 @@ subprojects {
             splits {
                 abi {
                     isEnable = true
-                    isUniversalApk = true
+                    isUniversalApk = false
                     reset()
-                    include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+                    include("arm64-v8a")
                 }
             }
         }
