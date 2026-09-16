@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build arm64 APK
+    name: Build APK
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
@@ -74,6 +74,10 @@ jobs:
         run: |
           echo "--- applicationId / namespace ---"
           grep -n 'applicationId =\|namespace = if\|abiFilters\|removeSuffix = ' build.gradle.kts
+          echo "--- abi splits ---"
+          grep -n 'isEnable\|isUniversalApk\|reset()\|include(' build.gradle.kts
+          echo "--- core abis ---"
+          grep -n 'val abis' core/build.gradle.kts
           echo "--- version detection (CMake 会读这些) ---"
           git submodule foreach 'git branch -r --contains HEAD | head -3' || true
           echo "--- signing ---"
@@ -93,6 +97,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: maomao-arm64-apk
+          name: maomao-apk
           path: app/build/outputs/apk/meta/release/*.apk
           if-no-files-found: error

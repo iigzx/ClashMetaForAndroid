@@ -62,7 +62,7 @@ afterEvaluate {
     }
 }
 
-val abis = listOf("arm64-v8a" to "Arm64V8a")
+val abis = listOf("arm64-v8a" to "Arm64V8a", "armeabi-v7a" to "ArmeabiV7a", "x86" to "X86", "x86_64" to "X8664")
 
 androidComponents.onVariants { variant ->
     val cmakeName = if (variant.buildType == "debug") "Debug" else "RelWithDebInfo"

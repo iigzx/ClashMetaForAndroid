@@ -65,12 +65,12 @@ subprojects {
             resValue("integer", "release_code", "$versionCode")
 
             ndk {
-                abiFilters += listOf("arm64-v8a")
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
             }
 
             externalNativeBuild {
                 cmake {
-                    abiFilters("arm64-v8a")
+                    abiFilters("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
                 }
             }
 
@@ -185,12 +185,10 @@ subprojects {
 
             splits {
                 abi {
-                    // 只产出单一 arm64-v8a APK。ABI 由上面的 ndk / externalNativeBuild
-                    // abiFilters 决定；同时开启 ABI splits 会让 AGP 报
-                    // "Conflicting configuration ... in ndk abiFilters cannot be
-                    // present when splits abi filters are set"。
-                    isEnable = false
-                    isUniversalApk = false
+                    isEnable = true
+                    isUniversalApk = true
+                    reset()
+                    include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
                 }
             }
         }
