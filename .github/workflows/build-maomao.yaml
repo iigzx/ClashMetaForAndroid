@@ -20,8 +20,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      # ★ 不能用 checkout 的 submodules: recursive —— 它会带 --depth=1，
+      #   子模块浅克隆后没有任何 remote 分支，CMake 里
+      #   git branch -r --contains 查不到东西 → 版本号算空 → configure 直接报错。
+      #   上游就是这么写的（不带 --depth ⇒ 子模块全量拉取）。
+      - name: Checkout submodules
+        run: git submodule update --init --recursive --force
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -32,8 +37,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
+      # 必须是 MetaCubeX 定制 Go（下面 Apply Go patches 依赖它的上下文），
+      # @v5 标签不支持 go-download-base-url，会被忽略并退回官方 Go。
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           go-version: '1.26'
           go-download-base-url: 'https://github.com/MetaCubeX/go/releases/download/build'
@@ -67,6 +74,8 @@ jobs:
         run: |
           echo "--- applicationId / namespace ---"
           grep -n 'applicationId =\|namespace = if\|abiFilters\|removeSuffix = ' build.gradle.kts
+          echo "--- version detection (CMake 会读这些) ---"
+          git submodule foreach 'git branch -r --contains HEAD | head -3' || true
           echo "--- signing ---"
           test -f release.keystore && echo "release.keystore present" || echo "release.keystore MISSING"
           test -f signing.properties && echo "signing.properties present" || echo "signing.properties MISSING"
