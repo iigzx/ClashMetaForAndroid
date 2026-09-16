@@ -70,6 +70,24 @@ jobs:
           cp -f /etc/ssl/certs/ca-certificates.crt \
                 core/src/foss/golang/clash/component/ca/ca-certificates.crt
 
+      # ★ 签名密钥不再提交进仓库（公开仓库 = 公开密钥），改从 Secrets 生成。
+      # 没有 Secrets 时，build.gradle.kts 会回退到 debug 签名（不阻断构建）。
+      - name: Setup signing
+        run: |
+          if [ -n "${{ secrets.KEYSTORE }}" ]; then
+            echo "${{ secrets.KEYSTORE }}" | base64 --decode > release.keystore
+            {
+              echo "keystore.password=${{ secrets.STORE_PASSWORD }}"
+              echo "key.alias=${{ secrets.KEY_ALIAS }}"
+              echo "key.password=${{ secrets.KEY_PASSWORD }}"
+            } > signing.properties
+            echo "signing: 使用 Secrets 中的 release 密钥"
+          else
+            echo "signing: ⚠️ 无 Secrets，将回退 debug 签名"
+          fi
+          test -f release.keystore && echo "  release.keystore OK" || echo "  release.keystore MISSING"
+          test -f signing.properties && echo "  signing.properties OK" || echo "  signing.properties MISSING"
+
       - name: Show effective config
         run: |
           echo "--- applicationId / namespace ---"

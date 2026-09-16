@@ -64,3 +64,7 @@ google-services.json
 
 # MacOS
 .DS_Store
+
+# 签名密钥：改从 GitHub Secrets 注入（见 .github/workflows/build-maomao.yaml）
+release.keystore
+signing.properties
